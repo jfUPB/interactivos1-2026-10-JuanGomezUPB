@@ -2,8 +2,15 @@
 
 ## Bitácora de proceso de aprendizaje
 ### Actividad 01
-Este es  mi primer texto de la actividad 1
+#### ¿Qué es un sistema físico interactivo?
+Trata de la aplicación de un programa que junte al mundo análogo con el mundo digital, usando sensores para captar información del mundo real y utilaizarla en el programa y que este a su vez responda a dichos sensores.
+#### ¿Cómo podrías aplicar lo que has visto en tu perfil profesional?
+Esto abre un espacio para trabajar con distintas empresas que busquen llevar su producto o publicitar su producto a tráves de la interacción con las personas.
 ### Actividad 02
+#### ¿Qué es el diseño/arte generativo?
+El diseño o arte generativo consiste en la creación de diseños en sistemas computacionales con información del mundo real. Es decir, el diseño, que ya esta programado, no se basa en la intuición o las imágenes preconcebidas del diseñador sobre la marca, sino sobre eventos medibles.
+#### ¿Cómo podrías aplicar lo que has visto en tu perfil profesional?
+Lo más factible es que el diseño generativo se aplique para empresas que busquen estrategias de marketing basadas en los datos que manejan y quieren resaltar.
 ### Actividad 03
 ### Actividad 04
 ### Actividad 05
@@ -68,3 +75,4 @@ function connectBtnClick() {
 
 
 ## Bitácora de reflexión
+
