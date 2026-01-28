@@ -153,14 +153,16 @@ while True:
 
 ## Bitácora de reflexión
 ### Actividad 06
-#### Regresa a la actividad 4 y trata de explicar en tus propias palabras de la manera más detallada que puedas cómo funciona el sistema físico interactivo. 
-  En la Actividad 04 el fin del sistema es que cuando se presione el botón A del micro:bit, el cuadrado en pantalla pase de ser color verde a color rojo.
+--> Regresa a la actividad 4 y trata de explicar en tus propias palabras de la manera más detallada que puedas cómo funciona el sistema físico interactivo. 
+
+En la Actividad 04 el fin del sistema es que cuando se presione el botón A del micro:bit, el cuadrado en pantalla pase de ser color verde a color rojo.
   
-  En el códidgo del programa p5.js el function setup crea el canvas, el fondo y el botón para conectar el programa con el micro:bit. Una vez se tiene el canvas sobre el cual trabajar hay que crear el cuadrado, por lo que se crea un function: draw. Se escribe una condición con un if, de modo que si el micro:bit manda una señal de "A", el cuadrado se pinte rojo. Por el contrario, si llega una señal "N", el cuadrado se pinta de verde. Las siguientes líneas definen el tamaña del cuadrado y su posición en el canvas (centrado): "rect(width / 2, height / 2, 50, 50);".
+En el códidgo del programa p5.js el function setup crea el canvas, el fondo y el botón para conectar el programa con el micro:bit. Una vez se tiene el canvas sobre el cual trabajar hay que crear el cuadrado, por lo que se crea un function: draw. Se escribe una condición con un if, de modo que si el micro:bit manda una señal de "A", el cuadrado se pinte rojo. Por el contrario, si llega una señal "N", el cuadrado se pinta de verde. Las siguientes líneas definen el tamaña del cuadrado y su posición en el canvas (centrado): "rect(width / 2, height / 2, 50, 50);".
   
-  En el programa del micro:bit se trabaja solo con un if. Si  el botón A se presiona ("if button_a.is_pressed():"), entonces se envía la señal "A" ("uart.write('A')") al programa p5.js. Si se presiona cualquier botón que no sea el A, o si directamente no se presiona ningún botón. Es decir, si se lleva a cabo cualquier otra acción ("else:"), entonces se envía la señal "N" ("uart.write('N')").
+En el programa del micro:bit se trabaja solo con un if. Si  el botón A se presiona ("if button_a.is_pressed():"), entonces se envía la señal "A" ("uart.write('A')") al programa p5.js. Si se presiona cualquier botón que no sea el A, o si directamente no se presiona ningún botón. Es decir, si se lleva a cabo cualquier otra acción ("else:"), entonces se envía la señal "N" ("uart.write('N')").
   
-  Una vez se ejevcuta el programa, como el usuario no presiona ningún botón el cuadrado permeanece verde hasta que el usuario presione el botón A.
+Una vez se ejevcuta el programa, como el usuario no presiona ningún botón el cuadrado permeanece verde hasta que el usuario presione el botón A.
+
 
 
 
