@@ -1,22 +1,13 @@
 # Unidad 1
 
 ## Bitácora de proceso de aprendizaje
-
 ### Actividad 01
-
 Este es  mi primer texto de la actividad 1
-
-## Bitácora de aplicación 
-
-
-
-## Bitácora de reflexión
-
-
-
-
+### Actividad 02
+### Actividad 03
+### Actividad 04
 ### Actividad 05
-# código p5.js
+#### código p5.js
 let port;
 let connectBtn;
 let movex;
@@ -67,9 +58,13 @@ function connectBtnClick() {
     }
 }
 
-# Explicación
+#### Explicación
 - se crea una variable para la posición en x. Todo lo demás se deja como en el código anterior: la primera parte sirve para crear el circulo y la posición inicial de este.
 - function.draw: cada vez que se presiona una tecla se crea un elipse nuevo con las mismas cordeenadas del incial excepto por las cordeenadas en el eje x, que son reemplazadas por la variable anteriormente creada (movex).
 - los botones B y A le suman o le restan 6 de posición a la ultima coordenada respectivamente. Es decir, si se presiona el botón A, por ejemplo, el círculo se mueve 6 hacia la izquierda desde el inicio y así sucesivamente. 
 
+## Bitácora de aplicación 
 
+
+
+## Bitácora de reflexión
