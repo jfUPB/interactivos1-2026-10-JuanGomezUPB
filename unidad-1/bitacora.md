@@ -70,6 +70,9 @@ Lo más factible es que el diseño generativo se aplique para empresas que busqu
 
   #### ¿Por qué no funcionaba el programa con was_pressed() y por qué funciona con is_pressed()? Explica detalladamente.
   El 
+
+
+## Bitácora de aplicación 
 ### Actividad 05
 #### código p5.js
 
@@ -148,11 +151,11 @@ while True:
 - function.draw: cada vez que se presiona una tecla se crea un elipse nuevo con las mismas cordeenadas del incial excepto por las cordeenadas en el eje x, que son reemplazadas por la variable anteriormente creada (movex).
 - los botones B y A le suman o le restan 6 de posición a la ultima coordenada respectivamente. Es decir, si se presiona el botón A, por ejemplo, el círculo se mueve 6 hacia la izquierda desde el inicio y así sucesivamente. 
 
-## Bitácora de aplicación 
 
 
 
 ## Bitácora de reflexión
+
 
 
 
