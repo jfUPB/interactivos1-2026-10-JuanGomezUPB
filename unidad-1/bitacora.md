@@ -14,6 +14,9 @@ Lo más factible es que el diseño generativo se aplique para empresas que busqu
 ### Actividad 03
 ### Actividad 04
 #### código
+
+
+```js
   let port;
   let connectBtn;
   let connectionInitialized = false;
@@ -63,10 +66,14 @@ Lo más factible es que el diseño generativo se aplique para empresas que busqu
     }
   }
 
+```
+
   #### ¿Por qué no funcionaba el programa con was_pressed() y por qué funciona con is_pressed()? Explica detalladamente.
   El 
 ### Actividad 05
 #### código p5.js
+
+```js
 let port;
 let connectBtn;
 let movex;
@@ -117,7 +124,11 @@ function connectBtnClick() {
     }
 }
 
+```
+
 #### código micro.bit
+
+```py
 from microbit import *
 
 uart.init(baudrate=115200)
@@ -130,6 +141,7 @@ while True:
     if button_b.is_pressed():
         uart.write('B')
         sleep(500)
+```
 
 #### Explicación
 - se crea una variable para la posición en x. Todo lo demás se deja como en el código anterior: la primera parte sirve para crear el circulo y la posición inicial de este.
@@ -141,6 +153,7 @@ while True:
 
 
 ## Bitácora de reflexión
+
 
 
 
