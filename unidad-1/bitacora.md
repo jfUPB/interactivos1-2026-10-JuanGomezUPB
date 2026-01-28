@@ -62,6 +62,9 @@ Lo más factible es que el diseño generativo se aplique para empresas que busqu
       port.close();
     }
   }
+
+  #### ¿Por qué no funcionaba el programa con was_pressed() y por qué funciona con is_pressed()? Explica detalladamente.
+  El 
 ### Actividad 05
 #### código p5.js
 let port;
@@ -114,6 +117,20 @@ function connectBtnClick() {
     }
 }
 
+#### código micro.bit
+from microbit import *
+
+uart.init(baudrate=115200)
+display.show(Image.BUTTERFLY)
+
+while True:
+    if button_a.is_pressed():
+        uart.write('A')
+        sleep(500)
+    if button_b.is_pressed():
+        uart.write('B')
+        sleep(500)
+
 #### Explicación
 - se crea una variable para la posición en x. Todo lo demás se deja como en el código anterior: la primera parte sirve para crear el circulo y la posición inicial de este.
 - function.draw: cada vez que se presiona una tecla se crea un elipse nuevo con las mismas cordeenadas del incial excepto por las cordeenadas en el eje x, que son reemplazadas por la variable anteriormente creada (movex).
@@ -124,5 +141,6 @@ function connectBtnClick() {
 
 
 ## Bitácora de reflexión
+
 
 
