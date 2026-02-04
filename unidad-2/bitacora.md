@@ -2,7 +2,7 @@
 
 ## Bitácora de proceso de aprendizaje
 ### Actividad 2
-´´´
+````
 from microbit import *
 import utime
 
@@ -95,11 +95,12 @@ semaforo1= Semaforo(2,1)
 while True:
     semaforo1.update()
     utime.sleep_ms(20)
-   ´´´´
+  ````
 
 ## Bitácora de aplicación 
 
 
 
 ## Bitácora de reflexión
+
 
