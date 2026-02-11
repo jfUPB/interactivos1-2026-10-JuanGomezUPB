@@ -378,7 +378,7 @@ Código del diagrama
 
 title Game - UML State Machine
 
-[*] --> estado_config : Game() (constructor)
+[*] --> estado_config : 
 estado_config --> estado_TimerStart : S 
 estado_config: entry /\n self.counter = 20 \n if ev == "A": /\n self.counter + 1 \n if ev == "B": /\n self.counter - 1
 estado_TimerStart --> estado_TimerFinish : Timeout 
@@ -389,6 +389,7 @@ estado_TimerFinish : entry/\n display.show(Image.SKULL) \n music.play(music.PREL
 ````
 
 ## Bitácora de reflexión
+
 
 
 
