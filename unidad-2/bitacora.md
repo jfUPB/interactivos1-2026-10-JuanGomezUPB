@@ -371,10 +371,11 @@ while True:
     task.update()
     utime.sleep_ms(20)
 
-    ````
+````
 
 
 ## Bitácora de reflexión
+
 
 
 
