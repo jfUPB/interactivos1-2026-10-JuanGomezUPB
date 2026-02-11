@@ -372,9 +372,24 @@ while True:
     utime.sleep_ms(20)
 
 ````
+Código del diagrama
+````
+@startuml
 
+title Game - UML State Machine
+
+[*] --> estado_config : Game() (constructor)
+estado_config --> estado_TimerStart : S 
+estado_config: entry /\n self.counter = 20 \n if ev == "A": /\n self.counter + 1 \n if ev == "B": /\n self.counter - 1
+estado_TimerStart --> estado_TimerFinish : Timeout 
+estado_TimerStart : entry/\n self.myTimer.start(1000)
+estado_TimerFinish --> estado_config : A 
+estado_TimerFinish : entry/\n display.show(Image.SKULL) \n music.play(music.PRELUDE) 
+@enduml
+````
 
 ## Bitácora de reflexión
+
 
 
 
