@@ -137,10 +137,12 @@ while True:
     if button_b.was_pressed():
         semaforo1.post_event("B")
     utime.sleep_ms(20)
-    ````
+
+````
 
 ## Bitácora de aplicación 
 
 
 
 ## Bitácora de reflexión
+
