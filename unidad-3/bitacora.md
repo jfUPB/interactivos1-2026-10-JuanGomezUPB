@@ -293,10 +293,18 @@ while True:
     task.update()
     utime.sleep_ms(20)
 ````
+
+### Actividad 04
+pwd --> Path Working Directory
+ls -al --> Listar contenido de un directorio
+clear --> Limpiar
+flechas --> Navegar historial
+[inicial(es)] Tab --> Muestra todos los comandos con dicha letra
 ## Bitácora de aplicación 
 
 
 
 ## Bitácora de reflexión
+
 
 
