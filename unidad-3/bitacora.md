@@ -295,16 +295,17 @@ while True:
 ````
 
 ### Actividad 04
-pwd --> Path Working Directory
-ls -al --> Listar contenido de un directorio
-clear --> Limpiar
-flechas --> Navegar historial
-[inicial(es)] Tab --> Muestra todos los comandos con dicha letra
+- pwd --> Path Working Directory
+- ls -al --> Listar contenido de un directorio
+- clear --> Limpiar
+- flechas --> Navegar historial
+- [inicial(es)] Tab --> Muestra todos los comandos con dicha letra
 ## Bitácora de aplicación 
 
 
 
 ## Bitácora de reflexión
+
 
 
 
