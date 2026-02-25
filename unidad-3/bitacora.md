@@ -519,6 +519,7 @@ function windowResized() {
 ````
 Código de p5 para A-B-A
 
+````
 const TIMER_LIMITS = {
   min: 15,
   max: 25,
@@ -731,10 +732,11 @@ function connectBtnClick() {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
-
+````
 
 
 ## Bitácora de reflexión
+
 
 
 
