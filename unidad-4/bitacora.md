@@ -56,7 +56,29 @@ function parseCsvLine(line) {
 
   return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
 }
-----
+++++
+
+En esta parte se programa el microbit para enviar continuamente los datos al computador mediante comunicación serial. Primero se inicializa el puerto UART a 115200 baudios y se enciende un píxel en la pantalla para indicar que el programa está activo. Luego, dentro de un ciclo infinito, se obtienen el tiempo desde que el dispositivo se encendió, los valores del acelerómetro en los ejes X y Y, y el estado de los botones A y B, representados como 1 si están presionados o 0 si no. Después se calcula un checksum sumando el valor absoluto de X y Y más el estado de los botones, lo que permite verificar la integridad de los datos. Finalmente se construye la trama con el formato definido y se envía por el puerto serial cada 100 milisegundos, es decir, aproximadamente a una frecuencia de 10 Hz.
+
+++++
+from microbit import *
+
+uart.init(115200)
+display.set_pixel(0,0,9)
+
+while True:
+    t = running_time()
+    xValue = accelerometer.get_x()
+    yValue = accelerometer.get_y()
+    aState = 1 if button_a.is_pressed() else 0
+    bState = 1 if button_b.is_pressed() else 0
+    chk = abs(xValue) + abs(yValue) + aState + bState
+    data = "$T:{}|X:{}|Y:{}|A:{}|B:{}|CHK:{}\n".format(t, xValue, yValue, aState, bState, chk
+    )
+    uart.write(data)
+    sleep(100) # Envia datos a 10 Hz    
+++++
+
 
 
 ## Bitácora de reflexión
