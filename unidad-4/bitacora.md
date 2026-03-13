@@ -80,6 +80,65 @@ while True:
 ++++
 
 
+En esta parte del proyecto se integra la información que llega del microbit con la lógica gráfica del programa en p5.js, respetando la arquitectura del sistema. Para hacerlo, solo se modifican dos funciones del objeto painter: updateLogic(data) y drawRunning(), además de agregar dos nuevas variables al objeto: circleResolution y radius.
+
+En el constructor se inicializan estas variables con valores por defecto para asegurar que el programa tenga parámetros válidos antes de recibir datos del hardware.
+++++
+this.circleResolution = 5;
+this.radius = 100;
+++++
+
+Luego, dentro de updateLogic(data), se actualizan estas variables utilizando los valores del acelerómetro que llegan desde el microbit. Para adaptar los rangos del sensor al tamaño del canvas se utiliza la función map(), que transforma el rango original del acelerómetro (-2048 a 2047) en valores útiles para el dibujo.
+++++
+this.circleResolution = int(map(data.y, -2048, 2047, 2, 10));
+this.radius = map(data.x, -2048, 2047, -width/2, width/2);
+++++
+
+De esta manera, el eje Y controla la resolución del círculo (es decir, cuántos vértices tiene la figura), mientras que el eje X controla el radio del círculo.
+
+Finalmente, en la función drawRunning() se utiliza esa información para dibujar la figura en el canvas. Dependiendo del estado del botón B, el círculo puede dibujarse con relleno o solo con su contorno.
+
+## Explicación
+
+En esta parte se define la función `drawRunning()`, que es la encargada de dibujar la figura en el canvas usando los datos que llegan desde el microbit. Primero se obtiene el objeto `mb`, que contiene la información recibida del dispositivo, y se verifica que los datos estén listos antes de continuar.
+
+Si el botón **A** está presionado, el programa comienza a dibujar. Para hacerlo, se mueve el origen del canvas al centro usando `translate(width / 2, height / 2)`, lo que permite que la figura se dibuje alrededor del centro de la pantalla.
+
+Luego se calcula el ángulo entre cada vértice del polígono usando `TAU / painter.circleResolution`. Esto determina cómo se distribuyen los puntos alrededor del círculo. Dependiendo del estado del botón **B**, la figura se dibuja con relleno o sin relleno. Después se usa `beginShape()` y un ciclo `for` para calcular la posición de cada vértice utilizando funciones trigonométricas (`cos` y `sin`) multiplicadas por el radio del círculo. Cada punto se agrega con `vertex()`, y finalmente `endShape()` cierra la figura.
+
+---
+
+```javascript
+function drawRunning() {
+  let mb = painter.rxData;
+
+  if (!mb.ready) return;
+
+  if (mb.btnA) {
+    push();
+    translate(width / 2, height / 2);
+
+    let angle = TAU / painter.circleResolution;
+    if (mb.btnB) {
+      fill(34, 45, 122, 50);
+    } else {
+      noFill();
+    }
+    stroke(0);
+    beginShape();
+    for (let i = 0; i <= painter.circleResolution; i++) {
+      let x = cos(angle * i) * painter.radius;
+      let y = sin(angle * i) * painter.radius;
+
+      vertex(x, y);
+    }
+    endShape();
+    pop();
+  }
+}
+```
+
+En esta función se realiza el dibujo de la figura en el canvas utilizando los datos que llegan desde el microbit. Primero se revisa que los datos estén listos y luego se verifica si el botón A está presionado, ya que este botón controla cuándo se dibuja la figura. Después se mueve el origen del dibujo al centro del canvas para que la figura se genere desde allí. Con el valor de `circleResolution` se calcula el ángulo entre cada vértice del polígono, y dependiendo del estado del botón B se decide si la figura se dibuja con relleno o solo con su contorno. Luego, mediante un ciclo `for`, se calculan las posiciones de los vértices usando funciones trigonométricas y el radio definido, agregando cada punto con `vertex()` hasta completar la figura.
 
 ## Bitácora de reflexión
 
