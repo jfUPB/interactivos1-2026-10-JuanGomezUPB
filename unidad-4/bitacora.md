@@ -60,7 +60,7 @@ function parseCsvLine(line) {
 
 En esta parte se programa el microbit para enviar continuamente los datos al computador mediante comunicación serial. Primero se inicializa el puerto UART a 115200 baudios y se enciende un píxel en la pantalla para indicar que el programa está activo. Luego, dentro de un ciclo infinito, se obtienen el tiempo desde que el dispositivo se encendió, los valores del acelerómetro en los ejes X y Y, y el estado de los botones A y B, representados como 1 si están presionados o 0 si no. Después se calcula un checksum sumando el valor absoluto de X y Y más el estado de los botones, lo que permite verificar la integridad de los datos. Finalmente se construye la trama con el formato definido y se envía por el puerto serial cada 100 milisegundos, es decir, aproximadamente a una frecuencia de 10 Hz.
 
-++++
+```` .py
 from microbit import *
 
 uart.init(115200)
@@ -77,22 +77,22 @@ while True:
     )
     uart.write(data)
     sleep(100) # Envia datos a 10 Hz    
-++++
+````
 
 
 En esta parte del proyecto se integra la información que llega del microbit con la lógica gráfica del programa en p5.js, respetando la arquitectura del sistema. Para hacerlo, solo se modifican dos funciones del objeto painter: updateLogic(data) y drawRunning(), además de agregar dos nuevas variables al objeto: circleResolution y radius.
 
 En el constructor se inicializan estas variables con valores por defecto para asegurar que el programa tenga parámetros válidos antes de recibir datos del hardware.
-++++
+`````.py
 this.circleResolution = 5;
 this.radius = 100;
-++++
+````
 
 Luego, dentro de updateLogic(data), se actualizan estas variables utilizando los valores del acelerómetro que llegan desde el microbit. Para adaptar los rangos del sensor al tamaño del canvas se utiliza la función map(), que transforma el rango original del acelerómetro (-2048 a 2047) en valores útiles para el dibujo.
-++++
+```` .py
 this.circleResolution = int(map(data.y, -2048, 2047, 2, 10));
 this.radius = map(data.x, -2048, 2047, -width/2, width/2);
-++++
+````
 
 De esta manera, el eje Y controla la resolución del círculo (es decir, cuántos vértices tiene la figura), mientras que el eje X controla el radio del círculo.
 
