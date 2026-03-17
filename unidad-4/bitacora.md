@@ -31,7 +31,7 @@ Ahora se realizan algunas validaciones:
 
 Después se calcula el checksum, que consiste en sumar el valor absoluto de x y y, más los estados de los botones A y B. Este valor se compara con el checksum que viene en la trama. Si no coinciden, se lanza un error porque significa que los datos pudieron corromperse. Finalmente, y si todo es correcto, la función devuelve un objeto con los valores de x, y y los botones convertidos a booleanos, que es el formato que espera el resto del sistema.
 
-'''' .py
+````.py
 function parseCsvLine(line) {
   const values = line.trim().split("|");
 
@@ -56,7 +56,7 @@ function parseCsvLine(line) {
 
   return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
 }
-''''
+````
 
 En esta parte se programa el microbit para enviar continuamente los datos al computador mediante comunicación serial. Primero se inicializa el puerto UART a 115200 baudios y se enciende un píxel en la pantalla para indicar que el programa está activo. Luego, dentro de un ciclo infinito, se obtienen el tiempo desde que el dispositivo se encendió, los valores del acelerómetro en los ejes X y Y, y el estado de los botones A y B, representados como 1 si están presionados o 0 si no. Después se calcula un checksum sumando el valor absoluto de X y Y más el estado de los botones, lo que permite verificar la integridad de los datos. Finalmente se construye la trama con el formato definido y se envía por el puerto serial cada 100 milisegundos, es decir, aproximadamente a una frecuencia de 10 Hz.
 
