@@ -78,7 +78,11 @@ return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
 
 **Parte 3**
 - En el sketch.js solo se modifican dos funciones que son drawRunning() y updateLogic(data) del objeto painter, y se agregan dos variables a este mismo objeto, circleResolution y radius, las cuales serán modificadas por los valores de X y Y del microbit respectivamente.
-
+- En el constructor se agregan estas dos variables para inicializarlas con valores por defecto:
+````.js
+this.circleResolution = 5;
+this.radius = 100;
+````
   **updateLogic**:
 - En **updateLogic**  van a aterrizar los datos provenientes del hardware.
 ```` .js
@@ -103,13 +107,114 @@ updateLogic(data) {
 
         this.prevA = this.rxData.btnA;
         this.prevB = this.rxData.btnB;
+
+        this.circleResolution = int(map(data.y, -2048, 2047, 2, 10));
+        this.radius = map(data.x, -2048, 2047, -width/2, width/2);
     }
 
 ````
 
+- En la primera parte se actualizan los datos que llegan del micro:bit. **this.rxData** es un objeto donde se van a guardar los datos procesados. El **ready = true:** indica que ya llegaron datos. El **map(...):** que nos recomiendan utilizar en la unidad transforma un rango a otro. En este caso, convierte data.x y data.y (que van de -2048 a 2047) a coordenadas de pantalla, 0 a width y 0 a height respectivamente.
+```` .js
+this.rxData.ready = true;
+this.rxData.x = map(data.x,-2048,2047,0,width);
+this.rxData.y = map(data.y,-2048,2047,0,height);
+this.rxData.btnA = data.btnA;
+this.rxData.btnB = data.btnB;
+````
 
-En esta parte se programa el microbit para enviar continuamente los datos al computador mediante comunicación serial. Primero se inicializa el puerto UART a 115200 baudios y se enciende un píxel en la pantalla para indicar que el programa está activo. Luego, dentro de un ciclo infinito, se obtienen el tiempo desde que el dispositivo se encendió, los valores del acelerómetro en los ejes X y Y, y el estado de los botones A y B, representados como 1 si están presionados o 0 si no. Después se calcula un checksum sumando el valor absoluto de X y Y más el estado de los botones, lo que permite verificar la integridad de los datos. Finalmente se construye la trama con el formato definido y se envía por el puerto serial cada 100 milisegundos, es decir, aproximadamente a una frecuencia de 10 Hz.
+- Luego se verifica si el botón A esta siendo presionado. **this.rxData.btnA** significa que A está presionado ahora, **!this.prevA** significa que antes NO estaba presionado.
+```` .js
+if (this.rxData.btnA && !this.prevA) {
+````
 
+- Cuando A esta presionado, se crea un tamaño aleatorio (**lineSize**) y se guarda la posición de pantalla con **ClickPosY** y **ClickPosX**.
+````.js
+this.lineSize = random(50, 160);
+this.clickPosX = this.rxData.x;
+this.clickPosY = this.rxData.y;
+console.log("A pressed");
+````
+
+- Luego se detecta si B se soltó:
+```` .js
+if (!this.rxData.btnB && this.prevB) {
+````
+
+- Se crea un color aleatorio y se guarda this.c:
+```` .js
+this.c = color(random(255), random(255), random(255), random(80, 100));
+console.log("B released");
+````
+
+- Finalmente se agrega:
+```` .js
+  this.circleResolution = int(map(data.y, -2048, 2047, 2, 10));
+  this.radius = map(data.x, -2048, 2047, -width/2, width/2);
+````
+- En **this.circleResolution**, **map(...):** transforma data.y de un rango [-2048, 2047] a un nuevo rango [2, 10] e **int(...):** convierte el resultado a un número entero.
+- En **this.Radius** se convierte data.x al rango [-width/2, width/2].
+
+  **drawRunning**
+- Se dibuja en pantalla solo cuando se mantiene presionado el botón A.
+```` .js
+function drawRunning() {
+    let mb = painter.rxData;
+
+    if (!mb.ready) return;
+
+    if (mb.btnA) {
+        let x = mb.x;
+        let y = mb.y;
+        push();
+        translate(x, y);
+        rotate(radians(painter.angle));
+        stroke(painter.c);
+        line(0, 0, painter.lineSize, painter.lineSize);
+        painter.angle += 1;
+        pop();
+    }
+}
+````
+
+- Primero se accede a los datos:
+```` .js
+let mb = painter.rxData;
+````
+
+- Para evitar errores o datos invalidos, si ready es false, la función se detiene:
+```` .js
+if (!mb.ready) return;
+````
+
+- Se dibuja solo si el botón A esta siendo presionado:
+  ````.js
+  if (mb.btnA) {
+  ````
+- Ahora se utilizan las coordenas del dibujo guardadas antes:
+  ```` .js
+  let x = mb.x;
+  let y = mb.y;
+  ````
+- *Dibujo*:
+````.js
+push();
+translate(x, y);
+rotate(radians(painter.angle));
+stroke(painter.c);
+line(0, 0, painter.lineSize, painter.lineSize);
+painter.angle += 1;
+pop();
+````
+- **push() / pop()**: Guardan y restauran el estado del dibujo. Evitan que transformaciones afecten otras partes.
+- **translate(x, y)**: Mueve el origen del dibujo a la posición (x, y). A partir de aquí, todo se dibuja relativo a ese punto.
+- **rotate(radians(painter.angle))**: Rota el sistema de coordenadas. angle está en grados, radians() lo convierte a radianes. Hace que la línea gire.
+- **stroke(painter.c)**: Define el color de la línea.
+- **line(0, 0, painter.lineSize, painter.lineSize)**: Dibuja una línea desde (0,0) hasta (lineSize, lineSize). Como el sistema está trasladado y rotado, la línea: aparece en (x, y) y gira con el ángulo.
+- **painter.angle += 1**: Incrementa el ángulo en cada frame. Produce animación (la línea gira continuamente).
+
+
+**Código del microbit**
 ```` .py
 from microbit import *
 
@@ -128,67 +233,3 @@ while True:
     uart.write(data)
     sleep(100) # Envia datos a 10 Hz    
 ````
-
-
-En esta parte del proyecto se integra la información que llega del microbit con la lógica gráfica del programa en p5.js, respetando la arquitectura del sistema. Para hacerlo, solo se modifican dos funciones del objeto painter: updateLogic(data) y drawRunning(), además de agregar dos nuevas variables al objeto: circleResolution y radius.
-
-En el constructor se inicializan estas variables con valores por defecto para asegurar que el programa tenga parámetros válidos antes de recibir datos del hardware.
-`````.py
-this.circleResolution = 5;
-this.radius = 100;
-````
-
-Luego, dentro de updateLogic(data), se actualizan estas variables utilizando los valores del acelerómetro que llegan desde el microbit. Para adaptar los rangos del sensor al tamaño del canvas se utiliza la función map(), que transforma el rango original del acelerómetro (-2048 a 2047) en valores útiles para el dibujo.
-```` .py
-this.circleResolution = int(map(data.y, -2048, 2047, 2, 10));
-this.radius = map(data.x, -2048, 2047, -width/2, width/2);
-````
-
-De esta manera, el eje Y controla la resolución del círculo (es decir, cuántos vértices tiene la figura), mientras que el eje X controla el radio del círculo.
-
-Finalmente, en la función drawRunning() se utiliza esa información para dibujar la figura en el canvas. Dependiendo del estado del botón B, el círculo puede dibujarse con relleno o solo con su contorno.
-
-## Explicación
-
-En esta parte se define la función `drawRunning()`, que es la encargada de dibujar la figura en el canvas usando los datos que llegan desde el microbit. Primero se obtiene el objeto `mb`, que contiene la información recibida del dispositivo, y se verifica que los datos estén listos antes de continuar.
-
-Si el botón **A** está presionado, el programa comienza a dibujar. Para hacerlo, se mueve el origen del canvas al centro usando `translate(width / 2, height / 2)`, lo que permite que la figura se dibuje alrededor del centro de la pantalla.
-
-Luego se calcula el ángulo entre cada vértice del polígono usando `TAU / painter.circleResolution`. Esto determina cómo se distribuyen los puntos alrededor del círculo. Dependiendo del estado del botón **B**, la figura se dibuja con relleno o sin relleno. Después se usa `beginShape()` y un ciclo `for` para calcular la posición de cada vértice utilizando funciones trigonométricas (`cos` y `sin`) multiplicadas por el radio del círculo. Cada punto se agrega con `vertex()`, y finalmente `endShape()` cierra la figura.
-
----
-
-```javascript
-function drawRunning() {
-  let mb = painter.rxData;
-
-  if (!mb.ready) return;
-
-  if (mb.btnA) {
-    push();
-    translate(width / 2, height / 2);
-
-    let angle = TAU / painter.circleResolution;
-    if (mb.btnB) {
-      fill(34, 45, 122, 50);
-    } else {
-      noFill();
-    }
-    stroke(0);
-    beginShape();
-    for (let i = 0; i <= painter.circleResolution; i++) {
-      let x = cos(angle * i) * painter.radius;
-      let y = sin(angle * i) * painter.radius;
-
-      vertex(x, y);
-    }
-    endShape();
-    pop();
-  }
-}
-```
-
-En esta función se realiza el dibujo de la figura en el canvas utilizando los datos que llegan desde el microbit. Primero se revisa que los datos estén listos y luego se verifica si el botón A está presionado, ya que este botón controla cuándo se dibuja la figura. Después se mueve el origen del dibujo al centro del canvas para que la figura se genere desde allí. Con el valor de `circleResolution` se calcula el ángulo entre cada vértice del polígono, y dependiendo del estado del botón B se decide si la figura se dibuja con relleno o solo con su contorno. Luego, mediante un ciclo `for`, se calculan las posiciones de los vértices usando funciones trigonométricas y el radio definido, agregando cada punto con `vertex()` hasta completar la figura.
-
-## Bitácora de reflexión
-
