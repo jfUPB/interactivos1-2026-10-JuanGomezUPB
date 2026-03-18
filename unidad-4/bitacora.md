@@ -20,18 +20,9 @@ node bridgeServer.js --device microbit = Abrir él que funciona con los comandos
 
 ## Bitácora de aplicación 
 ### Actividad 02
-En esa parte del código se están procesando los datos que llegan desde el microbit. La función toma la línea de texto que llega por el puerto y la divide usando **|** como separador. A continuación, lo que sucede es que el código verificar que realmente hayan llegado los 6 campos esperados (T, X, Y, A, B, CHK). De no ser así, se lanza un error porque significa que está incompleta o corrupta.
-
-Luego se extrae cada valor separando por **:** para obtener solo el número asociado a cada variable (por ejemplo, de X:-245 se obtiene -245). Estos valores se convierten a números para poder trabajar con ellos.
-
-Ahora se realizan algunas validaciones:
-- **x** y **y** deben ser números válidos.
-- Deben estar dentro del rango esperado del acelerómetro.
-- Los botones solo deben teneer valores de **0** o **1**.
-
-Después se calcula el checksum, que consiste en sumar el valor absoluto de x y y, más los estados de los botones A y B. Este valor se compara con el checksum que viene en la trama. Si no coinciden, se lanza un error porque significa que los datos pudieron corromperse. Finalmente, y si todo es correcto, la función devuelve un objeto con los valores de x, y y los botones convertidos a booleanos, que es el formato que espera el resto del sistema.
-
-````.py
+**Parte 1**
+En esa parte del código se están procesando los datos que llegan desde el microbit. Se verifica si lo que llego esta incompleto o corrupto.
+````.js
 function parseCsvLine(line) {
   const values = line.trim().split("|");
 
@@ -51,12 +42,71 @@ function parseCsvLine(line) {
   if (![0, 1].includes(btnA) || ![0, 1].includes(btnB)) throw new ParseError("Invalid button data");
   
   const calc = Math.abs(x) + Math.abs(y) + btnA + btnB;
-  if (calc !== chk) throw new ParseError("Hola, checksum mismatch");
+  if (calc !== chk) throw new ParseError("Checksum mismatch");
 
 
   return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
 }
 ````
+- En la siguiente parte del código se dividen los valores que llegarón en las distintas constantes: t, x, y, btnA, btnB, chk. Con **values[n]** se accede a el valor en la posición n. Es decir, values[0] va a ser el primer valor, en este caso t. El **.split(":")** va a dividir los valores usando **":"** :
+```` .py
+const t = Number(values[0].split(":")[1]);
+const x = Number(values[1].split(":")[1]);
+const y = Number(values[2].split(":")[1]);
+const btnA = Number(values[3].split(":")[1]);
+const btnB = Number(values[4].split(":")[1]);
+const chk = Number(values[5].split(":")[1]);
+````
+- Las siguientes lineas representan los posibles errores en los datos que llegaron. Por ejemplo, si el botón A o el botón B tienen valores distintos de 0 o 1:
+```` .js
+if (!Number.isFinite(x) || !Number.isFinite(y)) throw new ParseError("Invalid numeric data");
+if (x < -2048 || x > 2047 || y < -2048 || y > 2047) throw new ParseError("Out of expected range");
+if (![0, 1].includes(btnA) || ![0, 1].includes(btnB)) throw new ParseError("Invalid button data");
+````
+- Hay que verificar que sean correctos los datos, por lo que se suman los valores absolutos de x, y, btnA y btnB. De ser distintos, se muestra un error:
+```` .js
+const calc = Math.abs(x) + Math.abs(y) + btnA + btnB;
+if (calc !== chk) throw new ParseError("Hola, checksum mismatch");
+````
+- Finalmente, y si todo es correcto, la función devuelve un objeto con los valores de x, y y los botones convertidos a booleanos, que es el formato que espera el resto del sistema.
+```` .js
+return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
+````
+
+**Parte 2**
+- Capa de transporte --> "invisible" para mí.
+
+**Parte 3**
+- En el sketch.js solo se modifican dos funciones que son drawRunning() y updateLogic(data) del objeto painter, y se agregan dos variables a este mismo objeto, circleResolution y radius, las cuales serán modificadas por los valores de X y Y del microbit respectivamente.
+
+  **updateLogic**:
+- En **updateLogic**  van a aterrizar los datos provenientes del hardware.
+```` .js
+updateLogic(data) {
+        this.rxData.ready = true;
+        this.rxData.x = map(data.x,-2048,2047,0,width);
+        this.rxData.y = map(data.y,-2048,2047,0,height);
+        this.rxData.btnA = data.btnA;
+        this.rxData.btnB = data.btnB;
+
+        if (this.rxData.btnA && !this.prevA) {
+            this.lineSize = random(50, 160);
+            this.clickPosX = this.rxData.x;
+            this.clickPosY = this.rxData.y;
+            console.log("A pressed");
+        }
+
+        if (!this.rxData.btnB && this.prevB) {
+            this.c = color(random(255), random(255), random(255), random(80, 100));
+            console.log("B released");
+        }
+
+        this.prevA = this.rxData.btnA;
+        this.prevB = this.rxData.btnB;
+    }
+
+````
+
 
 En esta parte se programa el microbit para enviar continuamente los datos al computador mediante comunicación serial. Primero se inicializa el puerto UART a 115200 baudios y se enciende un píxel en la pantalla para indicar que el programa está activo. Luego, dentro de un ciclo infinito, se obtienen el tiempo desde que el dispositivo se encendió, los valores del acelerómetro en los ejes X y Y, y el estado de los botones A y B, representados como 1 si están presionados o 0 si no. Después se calcula un checksum sumando el valor absoluto de X y Y más el estado de los botones, lo que permite verificar la integridad de los datos. Finalmente se construye la trama con el formato definido y se envía por el puerto serial cada 100 milisegundos, es decir, aproximadamente a una frecuencia de 10 Hz.
 
