@@ -178,7 +178,51 @@ Manda ese paquete a otra función
 ````
 Verifica el header.
 
- let x = packet.readInt16BE(1);
-      let y = packet.readInt16BE(3);
+````
+let x = packet.readInt16BE(1);
+let y = packet.readInt16BE(3);
+````
+Lee números desde los bytes.
+
+````
+let btnA = packet[5] === 1;
+let btnB = packet[6] === 1;
+````
+Convierte 1 en true y 0 en false
+
+````
+let receivedChk = packet[7];
+````
+Ultimo byte
+
+````
+      let calcChk = (
+        packet[1] +
+        packet[2] +
+        packet[3] +
+        packet[4] +
+        packet[5] +
+        packet[6]
+      ) % 256;
+````
+Hace el checksum
+
+````
+      if (calcChk !== receivedChk) {
+        console.warn('Trama binaria corrupta');
+        return;
+````
+Valida los datos
+
+````
+      this.onData?.({
+        x: x,
+        y: y,
+        btnA: btnA,
+        btnB: btnB
+      });
+````
+Envía los datos al sistema.
+
 
 ## Bitácora de reflexión
