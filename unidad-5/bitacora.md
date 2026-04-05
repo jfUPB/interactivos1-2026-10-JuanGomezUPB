@@ -119,153 +119,66 @@ export class MicrobitBinaryAdapter extends BaseAdapter {
 }
 ````
 
-🧩 Código: constructor
+`````.js
 constructor() {
-  super();
-  this.buffer = Buffer.alloc(0);
+ super();
+ this.buffer = Buffer.alloc(0);
 }
-🔹 super();
+````
+super() va a activar la herencia (obligatorio) y this.buffer va a crear un espacio vacío para guardar bytes.
 
-👉 Llama al constructor de BaseAdapter
-Es obligatorio porque estás heredando.
+````
+ onSerialData(data) {
+    // Acumular bytes
+    this.buffer = Buffer.concat([this.buffer, data]);
+````
+Recibe los datos (bytes)
 
-🔹 this.buffer = Buffer.alloc(0);
-
-👉 Crea un buffer vacío de bytes
-
-Antes era un string ("")
-Ahora es un Buffer (porque trabajas con binario)
-
-💡 Es donde vas guardando los bytes que llegan.
-
-🔌 Código: onSerialData
-onSerialData(data) {
-
-👉 Esta función se ejecuta cada vez que llegan datos del puerto serial
-
-this.buffer = Buffer.concat([this.buffer, data]);
-
-👉 Une lo que ya tenías con lo nuevo que llegó
-
-Ejemplo:
-
-buffer viejo: [AA 01]
-data nuevo:   [F4 02 0C]
-resultado:    [AA 01 F4 02 0C]
+````
 while (this.buffer.length >= 8) {
+````
+Solo procesa lo que tiene minimo 8 bytes.
 
-👉 Mientras haya al menos 8 bytes (tamaño de un paquete), intenta procesar
-
+````
 let startIndex = this.buffer.indexOf(0xAA);
+````
+Busca el inicio del paquete que es AA.
 
-👉 Busca el byte 0xAA
+````
+ if (startIndex === -1) {
+        // No hay header → limpiar buffer
+        this.buffer = Buffer.alloc(0);
+        return;
+````
+Si no encuentra el header (AA), limpia.
 
-💡 Ese es el inicio del paquete (header)
-
-if (startIndex === -1) {
-  this.buffer = Buffer.alloc(0);
-  return;
-}
-
-👉 Si NO encuentra 0xAA:
-
-Todo lo que tienes es basura ❌
-Limpias el buffer
-Paras la función
+````
 if (this.buffer.length < startIndex + 8) {
-  return;
-}
+        return;
+````
+Espera más datos.
 
-👉 Si aún no tienes los 8 bytes completos:
+````
+ let packet = this.buffer.slice(startIndex, startIndex + 8);
+````
+Toma los 8 bytes como un paquete completo.
 
-Esperas más datos
-No haces nada todavía
-let packet = this.buffer.slice(startIndex, startIndex + 8);
+````
+ this.buffer = this.buffer.slice(startIndex + 8);
+````
+Elimina el paquete que ya se "extrajo".
 
-👉 Tomas exactamente 8 bytes desde el header
+````
+ this.processPacket(packet);
+````
+Manda ese paquete a otra función
 
-💡 Eso es UN paquete completo
+````
+ if (packet[0] !== 0xAA) return;
+````
+Verifica el header.
 
-this.buffer = this.buffer.slice(startIndex + 8);
+ let x = packet.readInt16BE(1);
+      let y = packet.readInt16BE(3);
 
-👉 Eliminas del buffer lo que ya procesaste
-
-this.processPacket(packet);
-
-👉 Envías ese paquete a otra función para interpretarlo
-
-🧠 Código: processPacket
-processPacket(packet) {
-
-👉 Aquí conviertes bytes → datos útiles
-
-if (packet[0] !== 0xAA) return;
-
-👉 Verifica que realmente empiece con el header
-
-let x = packet.readInt16BE(1);
-
-👉 Lee 2 bytes desde la posición 1 como número
-
-Int16 = entero de 16 bits
-BE = Big Endian
-
-💡 Usa bytes 1 y 2
-
-let y = packet.readInt16BE(3);
-
-👉 Igual que arriba, pero desde posición 3 (bytes 3 y 4)
-
-let btnA = packet[5] === 1;
-let btnB = packet[6] === 1;
-
-👉 Lee botones:
-
-1 → true
-0 → false
-let receivedChk = packet[7];
-
-👉 Último byte = checksum recibido
-
-let calcChk = (
-  packet[1] +
-  packet[2] +
-  packet[3] +
-  packet[4] +
-  packet[5] +
-  packet[6]
-) % 256;
-
-👉 Calcula el checksum:
-
-Suma bytes 1 a 6
-Hace % 256
-if (calcChk !== receivedChk) {
-  console.warn('⚠️ Trama binaria corrupta');
-  return;
-}
-
-👉 Si no coincide:
-
-❌ descartas paquete
-⚠️ muestras warning
-this.onData?.({
-  x: x,
-  y: y,
-  btnA: btnA,
-  btnB: btnB
-});
-
-👉 Envías los datos al sistema
-
-💡 Esto es lo más importante → el contrato
-
-} catch (error) {
-  console.warn('Error procesando paquete binario:', error);
-}
-
-👉 Si algo falla:
-
-No rompe el programa
-Solo muestra error
 ## Bitácora de reflexión
