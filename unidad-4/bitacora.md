@@ -337,17 +337,14 @@ Convierte strings en números
 ````.js
 Verifica si hay un error (la suma debería ser igual al checksum)
 
-````
+````.js
  this.onData?.({
         x: x,
         y: y,
         btnA: a === 1,
         btnB: b === 1
-````.js
+````
 Ejecuta.
-
-
-
 
 **Código del microbit**
 ```` .py
