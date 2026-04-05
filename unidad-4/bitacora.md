@@ -216,7 +216,7 @@ pop();
 - **painter.angle += 1**: Incrementa el ángulo en cada frame. Produce animación (la línea gira continuamente).
 
 *Código del MicroBit Adapter2*
-````
+````.js
 import { BaseAdapter } from './BaseAdapter.js';
 
 export class MicrobitV2Adapter extends BaseAdapter {
@@ -278,20 +278,20 @@ export class MicrobitV2Adapter extends BaseAdapter {
 ````
 
 *onSerialData(data) {*
-````
+````.js
 this.texto += data.toString();
 
 let lines = this.texto.split('\n');
 ````
 Estas líneas de código va a guardar lo que llega en un espacio de memoria temporal para poder reconstruir la línea completa. el "/n" va a dividr el texto en distintas líneas.
 
-````
+````.js
 this.texto = lines.pop();
 ````
 Esta parte del código va a quitar el ultimo elemento del array y lo va a guardar en un nuevo espacio de memoria a la espera de que lleguen más datos.
 Al final de esta parte, cada información completa, es decir que tenga valor de: x, y, btnA y btnB será una línea independiente.
 
-````
+````.js
  for (let line of lines) {
       this.processLine(line.trim());
 ````
@@ -299,12 +299,12 @@ Elemina caracteres invisibles como "", /n, /r.
 
 *processLine(line) {*
 Una vez que cada línea esta completa se precesa (ProcessLine):
-````
+````.js
 if (!line.startsWith('$')) return;
 ````
 Si no empieza con $ no es válida la línea.
 
-````
+````.js
 line = line.substring(1);
 
       let parts = line.split('|');
@@ -312,14 +312,14 @@ line = line.substring(1);
 ````
 Se remueve el simbolo $ y se divide la línea en pedazos: T, x, y, btnA, btnB. Finalmente se crea un objeto donde guardar los datos.
 
-````
+````.js
  for (let part of parts) {
         let [key, val] = part.split(':');
         values[key] = val;
 ````
 Convierte la etiqueta y el valor en dos variables
 
-````
+````.js
 let x = parseInt(values.X);
 let y = parseInt(values.Y);
 let a = parseInt(values.A);
@@ -334,7 +334,7 @@ Convierte strings en números
   if (calcChk !== chk) {
         console.warn('Trama corrupta descartada:', line);
         return;
-````
+````.js
 Verifica si hay un error (la suma debería ser igual al checksum)
 
 ````
@@ -343,7 +343,7 @@ Verifica si hay un error (la suma debería ser igual al checksum)
         y: y,
         btnA: a === 1,
         btnB: b === 1
-````
+````.js
 Ejecuta.
 
 
