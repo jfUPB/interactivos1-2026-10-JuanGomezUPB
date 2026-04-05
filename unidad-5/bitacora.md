@@ -119,7 +119,7 @@ export class MicrobitBinaryAdapter extends BaseAdapter {
 }
 ````
 
-`````.js
+````
 constructor() {
  super();
  this.buffer = Buffer.alloc(0);
