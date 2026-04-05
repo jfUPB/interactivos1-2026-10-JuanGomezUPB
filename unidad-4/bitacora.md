@@ -21,6 +21,8 @@ node bridgeServer.js --device microbit = Abrir él que funciona con los comandos
 ## Bitácora de aplicación 
 ### Actividad 02
 **Parte 1**
+*En esta primera parte voy a explicar el código que aparece en la página de la unidad 4 con el fin de entender bien que hace cada parte*
+
 En esa parte del código se están procesando los datos que llegan desde el microbit. Se verifica si lo que llego esta incompleto o corrupto.
 ````.js
 function parseCsvLine(line) {
@@ -212,6 +214,79 @@ pop();
 - **stroke(painter.c)**: Define el color de la línea.
 - **line(0, 0, painter.lineSize, painter.lineSize)**: Dibuja una línea desde (0,0) hasta (lineSize, lineSize). Como el sistema está trasladado y rotado, la línea: aparece en (x, y) y gira con el ángulo.
 - **painter.angle += 1**: Incrementa el ángulo en cada frame. Produce animación (la línea gira continuamente).
+
+
+import { BaseAdapter } from './BaseAdapter.js';
+
+export class MicrobitV2Adapter extends BaseAdapter {
+  constructor() {
+    super();
+    this.texto = '';
+  }
+
+  onSerialData(data) {
+    this.texto += data.toString();
+
+    let lines = this.texto.split('\n');
+    this.texto = lines.pop();
+
+    for (let line of lines) {
+      this.processLine(line.trim());
+    }
+  }
+
+  processLine(line) {
+    if (!line.startsWith('$')) return;
+
+    try {
+      line = line.substring(1);
+
+      let parts = line.split('|');
+      let values = {};
+
+      for (let part of parts) {
+        let [key, val] = part.split(':');
+        values[key] = val;
+      }
+
+      let x = parseInt(values.X);
+      let y = parseInt(values.Y);
+      let a = parseInt(values.A);
+      let b = parseInt(values.B);
+      let chk = parseInt(values.CHK);
+
+      let calcChk = Math.abs(x) + Math.abs(y) + Math.abs(a) + Math.abs(b);
+
+      if (calcChk !== chk) {
+        console.warn('⚠️ Trama corrupta descartada:', line);
+        return;
+      }
+
+      this.onData?.({
+        x: x,
+        y: y,
+        btnA: a === 1,
+        btnB: b === 1
+      });
+
+    } catch (error) {
+      console.warn('Error procesando trama:', error);
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 **Código del microbit**
