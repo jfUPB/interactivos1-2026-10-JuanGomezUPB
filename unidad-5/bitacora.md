@@ -34,6 +34,65 @@ while True:
   - aa: header (para saber donde empieza)
   - El checksum debe ser de un solo byte (carácter 0 a 255) --> el checksum verifica que el paquete este bien, por ejemplo, que el aa no se haya colado por ninguna parte.
 ## Bitácora de aplicación 
+*Copié el códido de la unidad 4 porque los cambios no son estructurales sino de como se leen los datos*
+````.js
+import { BaseAdapter } from './BaseAdapter.js';
 
+export class MicrobitV2Adapter extends BaseAdapter {
+  constructor() {
+    super();
+    this.texto = Texto.alloc(0);
+  }
 
+  onSerialData(data) {
+    this.texto += data.toString();
+
+    let lines = this.texto.split('\n');
+    this.texto = lines.pop();
+
+    for (let line of lines) {
+      this.processLine(line.trim());
+    }
+  }
+
+  processLine(line) {
+    if (!line.startsWith('$')) return;
+
+    try {
+      line = line.substring(1);
+
+      let parts = line.split('|');
+      let values = {};
+
+      for (let part of parts) {
+        let [key, val] = part.split(':');
+        values[key] = val;
+      }
+
+      let x = parseInt(values.X);
+      let y = parseInt(values.Y);
+      let a = parseInt(values.A);
+      let b = parseInt(values.B);
+      let chk = parseInt(values.CHK);
+
+      let calcChk = Math.abs(x) + Math.abs(y) + Math.abs(a) + Math.abs(b);
+
+      if (calcChk !== chk) {
+        console.warn('Trama corrupta descartada:', line);
+        return;
+      }
+
+      this.onData?.({
+        x: x,
+        y: y,
+        btnA: a === 1,
+        btnB: b === 1
+      });
+
+    } catch (error) {
+      console.warn('Error procesando trama:', error);
+    }
+  }
+}
+````
 ## Bitácora de reflexión
