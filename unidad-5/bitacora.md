@@ -118,4 +118,154 @@ export class MicrobitBinaryAdapter extends BaseAdapter {
   }
 }
 ````
+
+🧩 Código: constructor
+constructor() {
+  super();
+  this.buffer = Buffer.alloc(0);
+}
+🔹 super();
+
+👉 Llama al constructor de BaseAdapter
+Es obligatorio porque estás heredando.
+
+🔹 this.buffer = Buffer.alloc(0);
+
+👉 Crea un buffer vacío de bytes
+
+Antes era un string ("")
+Ahora es un Buffer (porque trabajas con binario)
+
+💡 Es donde vas guardando los bytes que llegan.
+
+🔌 Código: onSerialData
+onSerialData(data) {
+
+👉 Esta función se ejecuta cada vez que llegan datos del puerto serial
+
+this.buffer = Buffer.concat([this.buffer, data]);
+
+👉 Une lo que ya tenías con lo nuevo que llegó
+
+Ejemplo:
+
+buffer viejo: [AA 01]
+data nuevo:   [F4 02 0C]
+resultado:    [AA 01 F4 02 0C]
+while (this.buffer.length >= 8) {
+
+👉 Mientras haya al menos 8 bytes (tamaño de un paquete), intenta procesar
+
+let startIndex = this.buffer.indexOf(0xAA);
+
+👉 Busca el byte 0xAA
+
+💡 Ese es el inicio del paquete (header)
+
+if (startIndex === -1) {
+  this.buffer = Buffer.alloc(0);
+  return;
+}
+
+👉 Si NO encuentra 0xAA:
+
+Todo lo que tienes es basura ❌
+Limpias el buffer
+Paras la función
+if (this.buffer.length < startIndex + 8) {
+  return;
+}
+
+👉 Si aún no tienes los 8 bytes completos:
+
+Esperas más datos
+No haces nada todavía
+let packet = this.buffer.slice(startIndex, startIndex + 8);
+
+👉 Tomas exactamente 8 bytes desde el header
+
+💡 Eso es UN paquete completo
+
+this.buffer = this.buffer.slice(startIndex + 8);
+
+👉 Eliminas del buffer lo que ya procesaste
+
+this.processPacket(packet);
+
+👉 Envías ese paquete a otra función para interpretarlo
+
+🧠 Código: processPacket
+processPacket(packet) {
+
+👉 Aquí conviertes bytes → datos útiles
+
+if (packet[0] !== 0xAA) return;
+
+👉 Verifica que realmente empiece con el header
+
+let x = packet.readInt16BE(1);
+
+👉 Lee 2 bytes desde la posición 1 como número
+
+Int16 = entero de 16 bits
+BE = Big Endian
+
+💡 Usa bytes 1 y 2
+
+let y = packet.readInt16BE(3);
+
+👉 Igual que arriba, pero desde posición 3 (bytes 3 y 4)
+
+let btnA = packet[5] === 1;
+let btnB = packet[6] === 1;
+
+👉 Lee botones:
+
+1 → true
+0 → false
+let receivedChk = packet[7];
+
+👉 Último byte = checksum recibido
+
+let calcChk = (
+  packet[1] +
+  packet[2] +
+  packet[3] +
+  packet[4] +
+  packet[5] +
+  packet[6]
+) % 256;
+
+👉 Calcula el checksum:
+
+Suma bytes 1 a 6
+Hace % 256
+if (calcChk !== receivedChk) {
+  console.warn('⚠️ Trama binaria corrupta');
+  return;
+}
+
+👉 Si no coincide:
+
+❌ descartas paquete
+⚠️ muestras warning
+this.onData?.({
+  x: x,
+  y: y,
+  btnA: btnA,
+  btnB: btnB
+});
+
+👉 Envías los datos al sistema
+
+💡 Esto es lo más importante → el contrato
+
+} catch (error) {
+  console.warn('Error procesando paquete binario:', error);
+}
+
+👉 Si algo falla:
+
+No rompe el programa
+Solo muestra error
 ## Bitácora de reflexión
