@@ -215,7 +215,11 @@ pop();
 - **line(0, 0, painter.lineSize, painter.lineSize)**: Dibuja una línea desde (0,0) hasta (lineSize, lineSize). Como el sistema está trasladado y rotado, la línea: aparece en (x, y) y gira con el ángulo.
 - **painter.angle += 1**: Incrementa el ángulo en cada frame. Produce animación (la línea gira continuamente).
 
+**-------------------------------------------------------------------------------------------------------**
+
+**Parte 2**
 ***Código del MicrobitASCII2Adapter*** *(El código nuevo)*
+````.js
 const { SerialPort } = require("serialport");
 const BaseAdapter = require("./BaseAdapter");
 
@@ -354,6 +358,75 @@ class MicrobitAscii2Adapter extends BaseAdapter {
 }
 
 module.exports = MicrobitAscii2Adapter;
+````
+Explicación del código:
+````.js
+class ParseError extends Error { }
+````
+Define un error propio para distinguir errores de datos mal formados.
+
+````.js
+function parseCsvLine(line) {
+  const values = line.trim().split("|");
+  if (values.length !== 6) throw new ParseError(`Expected 6 values, got ${values.length}`);
+
+  const t = Number(values[0].split(":")[1]);
+  const x = Number(values[1].split(":")[1]);
+  const y = Number(values[2].split(":")[1]);
+  const btnA = Number(values[3].split(":")[1]);
+  const btnB = Number(values[4].split(":")[1]);
+  const CHK = Number(values[5].split(":")[1]) % 1000;
+  const calcCHK = Math.abs(x) + Math.abs(y) + btnA + btnB;
+  if (calcCHK !== CHK)
+  throw new ParseError("Checksum mismatch");
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new ParseError("Invalid numeric data");
+  if (x < -2048 || x > 2047 || y < -2048 || y > 2047) throw new ParseError("Out of expected range");
+  if (![1, 0].includes(btnA) || ![1, 0].includes(btnB)) throw new ParseError("Invalid button data");
+
+  return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
+````
+- Esta función es importante porque se encarga de leer las líneas que llegan de la siguiente forma:
+**a)** Separa los datos
+````.js
+ const values = line.trim().split("|");
+````
+Divide los datos que llegan por **|**
+**b)** Validar cantidad
+````.js
+if (values.length !== 6) throw new ParseError(`Expected 6 values, got ${values.length}`);
+````
+Los datos deben llegar en seis partes, de lo contrario se muestra en pantalla el siguiente error: "Expected 6 values, got ${values.length}"
+**c)** Extraer valores
+````.js
+  const t = Number(values[0].split(":")[1]);
+  const x = Number(values[1].split(":")[1]);
+  const y = Number(values[2].split(":")[1]);
+  const btnA = Number(values[3].split(":")[1]);
+  const btnB = Number(values[4].split(":")[1]);
+  const CHK = Number(values[5].split(":")[1]) % 1000;
+````
+Divide los valores que llegan por ":" y toma el valor numérico.
+**d)** Verificar checksum
+````.js
+const calcCHK = Math.abs(x) + Math.abs(y) + btnA + btnB;
+if (calcCHK !== CHK)
+throw new ParseError("Checksum mismatch");
+````
+Hace una suma entre todos los valores a la que se le llama Checksum, si es igual al Check original entonces está bien, de lo contrario es un error y se muestra en pantalla como: "Checksum mismatch"
+**e)** Validaciones extra
+````.js
+  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new ParseError("Invalid numeric data");
+  if (x < -2048 || x > 2047 || y < -2048 || y > 2047) throw new ParseError("Out of expected range");
+  if (![1, 0].includes(btnA) || ![1, 0].includes(btnB)) throw new ParseError("Invalid button data");
+````
+Se verifica que sean números válidos. que estén en rango esperado y que los botones sean 0 o 1, de lo contrario se muestra en pantalla su respectivo error.
+
+**f)** Resultado final
+````.js
+return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
+````
+Convierte: x, y en enteros y los botones en booleanos.
 
 **Código del microbit**
 ```` .py
