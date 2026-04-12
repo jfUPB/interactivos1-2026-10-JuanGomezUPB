@@ -215,136 +215,145 @@ pop();
 - **line(0, 0, painter.lineSize, painter.lineSize)**: Dibuja una línea desde (0,0) hasta (lineSize, lineSize). Como el sistema está trasladado y rotado, la línea: aparece en (x, y) y gira con el ángulo.
 - **painter.angle += 1**: Incrementa el ángulo en cada frame. Produce animación (la línea gira continuamente).
 
-*Código del MicroBit Adapter2*
-````.js
-import { BaseAdapter } from './BaseAdapter.js';
+***Código del MicrobitASCII2Adapter*** *(El código nuevo)*
+const { SerialPort } = require("serialport");
+const BaseAdapter = require("./BaseAdapter");
 
-export class MicrobitV2Adapter extends BaseAdapter {
-  constructor() {
+class ParseError extends Error { }
+
+//$T:tiempo|X:acel_x|Y:acel_y|A:estado_a|B:estado_b|CHK:checksum\n
+
+function parseCsvLine(line) {
+  const values = line.trim().split("|");
+  if (values.length !== 6) throw new ParseError(`Expected 6 values, got ${values.length}`);
+
+  const t = Number(values[0].split(":")[1]);
+  const x = Number(values[1].split(":")[1]);
+  const y = Number(values[2].split(":")[1]);
+  const btnA = Number(values[3].split(":")[1]);
+  const btnB = Number(values[4].split(":")[1]);
+  const CHK = Number(values[5].split(":")[1]) % 1000;
+  const calcCHK = Math.abs(x) + Math.abs(y) + btnA + btnB;
+  if (calcCHK !== CHK)
+  throw new ParseError("Checksum mismatch");
+
+  if (!Number.isFinite(x) || !Number.isFinite(y)) throw new ParseError("Invalid numeric data");
+  if (x < -2048 || x > 2047 || y < -2048 || y > 2047) throw new ParseError("Out of expected range");
+  if (![1, 0].includes(btnA) || ![1, 0].includes(btnB)) throw new ParseError("Invalid button data");
+
+  return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
+}
+
+
+class MicrobitAscii2Adapter extends BaseAdapter {
+  constructor({ path, baud = 115200, verbose = false } = {}) {
     super();
-    this.texto = '';
+    this.path = path;
+    this.baud = baud;
+    this.port = null;
+    this.buf = "";
+    this.verbose = verbose;
   }
 
-  onSerialData(data) {
-    this.texto += data.toString();
+  async connect() {
+    if (this.connected) return;
+    if (!this.path) throw new Error("serialPort is required for microbit device mode");
 
-    let lines = this.texto.split('\n');
-    this.texto = lines.pop();
+    this.port = new SerialPort({
+      path: this.path,
+      baudRate: this.baud,
+      autoOpen: false,
+    });
 
-    for (let line of lines) {
-      this.processLine(line.trim());
-    }
+    await new Promise((resolve, reject) => {
+      this.port.open((err) => (err ? reject(err) : resolve()));
+    });
+
+    this.connected = true;
+    this.onConnected?.(`serial open ${this.path} @${this.baud}`);
+
+    this.port.on("data", (chunk) => this._onChunk(chunk));
+    this.port.on("error", (err) => this._fail(err));
+    this.port.on("close", () => this._closed());
   }
 
-  processLine(line) {
-    if (!line.startsWith('$')) return;
+  async disconnect() {
+    if (!this.connected) return;
+    this.connected = false;
 
-    try {
-      line = line.substring(1);
-
-      let parts = line.split('|');
-      let values = {};
-
-      for (let part of parts) {
-        let [key, val] = part.split(':');
-        values[key] = val;
-      }
-
-      let x = parseInt(values.X);
-      let y = parseInt(values.Y);
-      let a = parseInt(values.A);
-      let b = parseInt(values.B);
-      let chk = parseInt(values.CHK);
-
-      let calcChk = Math.abs(x) + Math.abs(y) + Math.abs(a) + Math.abs(b);
-
-      if (calcChk !== chk) {
-        console.warn('Trama corrupta descartada:', line);
-        return;
-      }
-
-      this.onData?.({
-        x: x,
-        y: y,
-        btnA: a === 1,
-        btnB: b === 1
+    if (this.port && this.port.isOpen) {
+      await new Promise((resolve, reject) => {
+        this.port.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
+    }
+    this.port = null;
+    this.buf = "";
+    this.onDisconnected?.("serial closed");
+  }
 
-    } catch (error) {
-      console.warn('Error procesando trama:', error);
+  getConnectionDetail() {
+    return `serial open ${this.path}`;
+  }
+
+  _onChunk(chunk) {
+    this.buf += chunk.toString("utf8");
+
+    let idx;
+    while ((idx = this.buf.indexOf("\n")) >= 0) {
+      const line = this.buf.slice(0, idx).trim();
+      this.buf = this.buf.slice(idx + 1);
+
+      if (!line) continue;
+
+      try {
+        const parsed = parseCsvLine(line);
+        this.onData?.(parsed);
+      } catch (e) {
+        if (e instanceof ParseError) {
+          if (this.verbose) console.log("Bad data:", e.message, "raw:", line);
+        } else {
+          this._fail(e);
+        }
+      }
+    }
+
+    if (this.buf.length > 4096) this.buf = "";
+  }
+
+  _fail(err) {
+    this.onError?.(String(err?.message || err));
+    this.disconnect();
+  }
+
+  _closed() {
+    if (!this.connected) return;
+    this.connected = false;
+    this.port = null;
+    this.buf = "";
+    this.onDisconnected?.("serial closed (event)");
+  }
+
+  async writeLine(line) {
+    if (!this.port || !this.port.isOpen) return;
+    await new Promise((resolve, reject) => {
+      this.port.write(line, (err) => (err ? reject(err) : resolve()));
+    });
+  }
+
+  async handleCommand(cmd) {
+    if (cmd?.cmd === "setLed") {
+      const x = Math.max(0, Math.min(4, Math.trunc(cmd.x)));
+      const y = Math.max(0, Math.min(4, Math.trunc(cmd.y)));
+      const v = Math.max(0, Math.min(9, Math.trunc(cmd.value)));
+      await this.writeLine(`LED,${x},${y},${v}\n`);
     }
   }
 }
-````
 
-*onSerialData(data) {*
-````.js
-this.texto += data.toString();
-
-let lines = this.texto.split('\n');
-````
-Estas líneas de código va a guardar lo que llega en un espacio de memoria temporal para poder reconstruir la línea completa. el "/n" va a dividr el texto en distintas líneas.
-
-````.js
-this.texto = lines.pop();
-````
-Esta parte del código va a quitar el ultimo elemento del array y lo va a guardar en un nuevo espacio de memoria a la espera de que lleguen más datos.
-Al final de esta parte, cada información completa, es decir que tenga valor de: x, y, btnA y btnB será una línea independiente.
-
-````.js
- for (let line of lines) {
-      this.processLine(line.trim());
-````
-Elemina caracteres invisibles como "", /n, /r.
-
-*processLine(line) {*
-Una vez que cada línea esta completa se precesa (ProcessLine):
-````.js
-if (!line.startsWith('$')) return;
-````
-Si no empieza con $ no es válida la línea.
-
-````.js
-line = line.substring(1);
-
-      let parts = line.split('|');
-      let values = {};
-````
-Se remueve el simbolo $ y se divide la línea en pedazos: T, x, y, btnA, btnB. Finalmente se crea un objeto donde guardar los datos.
-
-````.js
- for (let part of parts) {
-        let [key, val] = part.split(':');
-        values[key] = val;
-````
-Convierte la etiqueta y el valor en dos variables
-
-````.js
-let x = parseInt(values.X);
-let y = parseInt(values.Y);
-let a = parseInt(values.A);
-let b = parseInt(values.B);
-let chk = parseInt(values.CHK);
-````
-Convierte strings en números
-
-````
- let calcChk = Math.abs(x) + Math.abs(y) + Math.abs(a) + Math.abs(b);
-
-  if (calcChk !== chk) {
-        console.warn('Trama corrupta descartada:', line);
-        return;
-````.js
-Verifica si hay un error (la suma debería ser igual al checksum)
-
-````.js
- this.onData?.({
-        x: x,
-        y: y,
-        btnA: a === 1,
-        btnB: b === 1
-````
-Ejecuta.
+module.exports = MicrobitAscii2Adapter;
 
 **Código del microbit**
 ```` .py
