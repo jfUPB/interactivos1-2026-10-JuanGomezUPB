@@ -36,193 +36,184 @@ while True:
 ## Bitácora de aplicación 
 *Copié el códido de la unidad 4 y seguí a partir de ahí, porque los cambios no son estructurales sino de como se leen los datos*
 ````.js
-import { BaseAdapter } from './BaseAdapter.js';
+const { SerialPort } = require("serialport");
+const BaseAdapter = require("./BaseAdapter");
 
-export class MicrobitBinaryAdapter extends BaseAdapter {
-  constructor() {
+class ParseError extends Error {}
+
+function parseBinaryPacket(buf) {
+  if (buf.length !== 8) throw new ParseError("Invalid packet length");
+
+  // Byte 0: header
+  if (buf[0] !== 0xAA) throw new ParseError("Invalid header");
+
+  // Datos
+  const x = buf.readInt16BE(1);
+  const y = buf.readInt16BE(3);
+  const btnA = buf[5];
+  const btnB = buf[6];
+  const chk = buf[7];
+
+  // Calcular checksum (bytes 1 a 6)
+  let calcCHK = 0;
+  for (let i = 1; i <= 6; i++) {
+    calcCHK = (calcCHK + buf[i]) % 256;
+  }
+
+  if (calcCHK !== chk) throw new ParseError("Checksum mismatch");
+
+  // Validaciones
+  if (x < -2048 || x > 2047 || y < -2048 || y > 2047)
+    throw new ParseError("Out of range");
+
+  if (![0, 1].includes(btnA) || ![0, 1].includes(btnB))
+    throw new ParseError("Invalid button data");
+
+  return {
+    x,
+    y,
+    btnA: btnA === 1,
+    btnB: btnB === 1,
+  };
+}
+
+class MicrobitBinary2Adapter extends BaseAdapter {
+  constructor({ path, baud = 115200, verbose = false } = {}) {
     super();
-    this.buffer = Buffer.alloc(0);
+    this.path = path;
+    this.baud = baud;
+    this.port = null;
+    this.buf = Buffer.alloc(0);
+    this.verbose = verbose;
   }
 
-  onSerialData(data) {
+  async connect() {
+    if (this.connected) return;
+    if (!this.path) throw new Error("serialPort is required");
+
+    this.port = new SerialPort({
+      path: this.path,
+      baudRate: this.baud,
+      autoOpen: false,
+    });
+
+    await new Promise((resolve, reject) => {
+      this.port.open((err) => (err ? reject(err) : resolve()));
+    });
+
+    this.connected = true;
+    this.onConnected?.(`serial open ${this.path} @${this.baud}`);
+
+    this.port.on("data", (chunk) => this._onChunk(chunk));
+    this.port.on("error", (err) => this._fail(err));
+    this.port.on("close", () => this._closed());
+  }
+
+  async disconnect() {
+    if (!this.connected) return;
+    this.connected = false;
+
+    if (this.port && this.port.isOpen) {
+      await new Promise((resolve, reject) => {
+        this.port.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
+
+    this.port = null;
+    this.buf = Buffer.alloc(0);
+    this.onDisconnected?.("serial closed");
+  }
+
+  _onChunk(chunk) {
     // Acumular bytes
-    this.buffer = Buffer.concat([this.buffer, data]);
+    this.buf = Buffer.concat([this.buf, chunk]);
 
-    // Procesar mientras haya suficiente data
-    while (this.buffer.length >= 8) {
-
+    while (this.buf.length >= 8) {
       // Buscar header 0xAA
-      let startIndex = this.buffer.indexOf(0xAA);
-
-      if (startIndex === -1) {
-        // No hay header → limpiar buffer
-        this.buffer = Buffer.alloc(0);
+      const start = this.buf.indexOf(0xAA);
+      if (start < 0) {
+        this.buf = Buffer.alloc(0);
         return;
       }
 
-      // Si no hay suficientes bytes después del header, esperar
-      if (this.buffer.length < startIndex + 8) {
-        return;
+      // Si no hay suficientes bytes aún
+      if (this.buf.length < start + 8) return;
+
+      const packet = this.buf.slice(start, start + 8);
+      this.buf = this.buf.slice(start + 8);
+
+      try {
+        const parsed = parseBinaryPacket(packet);
+        this.onData?.(parsed);
+      } catch (e) {
+        if (e instanceof ParseError) {
+          if (this.verbose) console.log("Bad packet:", e.message);
+        } else {
+          this._fail(e);
+        }
       }
-
-      // Extraer paquete de 8 bytes
-      let packet = this.buffer.slice(startIndex, startIndex + 8);
-
-      // Eliminar lo procesado del buffer
-      this.buffer = this.buffer.slice(startIndex + 8);
-
-      this.processPacket(packet);
     }
+
+    if (this.buf.length > 4096) this.buf = Buffer.alloc(0);
   }
 
-  processPacket(packet) {
-    try {
-      // Verificar header
-      if (packet[0] !== 0xAA) return;
+  _fail(err) {
+    this.onError?.(String(err?.message || err));
+    this.disconnect();
+  }
 
-      // Leer valores (Big Endian)
-      let x = packet.readInt16BE(1);
-      let y = packet.readInt16BE(3);
+  _closed() {
+    if (!this.connected) return;
+    this.connected = false;
+    this.port = null;
+    this.buf = Buffer.alloc(0);
+    this.onDisconnected?.("serial closed (event)");
+  }
 
-      let btnA = packet[5] === 1;
-      let btnB = packet[6] === 1;
+  async writeLine(line) {
+    if (!this.port || !this.port.isOpen) return;
+    await new Promise((resolve, reject) => {
+      this.port.write(line, (err) => (err ? reject(err) : resolve()));
+    });
+  }
 
-      let receivedChk = packet[7];
-
-      // Calcular checksum
-      let calcChk = (
-        packet[1] +
-        packet[2] +
-        packet[3] +
-        packet[4] +
-        packet[5] +
-        packet[6]
-      ) % 256;
-
-      if (calcChk !== receivedChk) {
-        console.warn('Trama binaria corrupta');
-        return;
-      }
-
-      // Emitir (MISMO CONTRATO)
-      this.onData?.({
-        x: x,
-        y: y,
-        btnA: btnA,
-        btnB: btnB
-      });
-
-    } catch (error) {
-      console.warn('Error procesando paquete binario:', error);
+  async handleCommand(cmd) {
+    if (cmd?.cmd === "setLed") {
+      const x = Math.max(0, Math.min(4, Math.trunc(cmd.x)));
+      const y = Math.max(0, Math.min(4, Math.trunc(cmd.y)));
+      const v = Math.max(0, Math.min(9, Math.trunc(cmd.value)));
+      await this.writeLine(`LED,${x},${y},${v}\n`);
     }
   }
 }
+
+module.exports = MicrobitBinary2Adapter;
 ````
 
+Las diferencias con el código ASCII son las siguientes:
+1.  Ya no se convierte a texto, sino que se acumulan buffers binarios reales.
+````.js
+this.buf = Buffer.concat([this.buf, chunk]);
 ````
-constructor() {
- super();
- this.buffer = Buffer.alloc(0);
-}
+2. Ya no se usan strings. Los datos se leen por la posición en la que llegan:
+   - El primer byte es el **header (AA)**
+   - El segundo y tercer bytes son la **x**
+   - El cuarto y quinto son la **y**
+   - El quinto es el **botón A**
+   - El sexto es el **botón B**
+   - El séptimo y ultimo es el **checksum**
+3. Cada paquete inicia con un header, represntado por "AA".
+````.js
+const start = this.buf.indexOf(0xAA);
 ````
-super() va a activar la herencia (obligatorio) y this.buffer va a crear un espacio vacío para guardar bytes.
-
+4. Para verificar, el checksum suma los bytes directamente y no los valores como se hacía en el ASCII.
+````.js
+  // Calcular checksum (bytes 1 a 6)
+  let calcCHK = 0;
+  for (let i = 1; i <= 6; i++) {
+    calcCHK = (calcCHK + buf[i]) % 256;
+  }
 ````
- onSerialData(data) {
-    // Acumular bytes
-    this.buffer = Buffer.concat([this.buffer, data]);
-````
-Recibe los datos (bytes)
-
-````
-while (this.buffer.length >= 8) {
-````
-Solo procesa lo que tiene minimo 8 bytes.
-
-````
-let startIndex = this.buffer.indexOf(0xAA);
-````
-Busca el inicio del paquete que es AA.
-
-````
- if (startIndex === -1) {
-        // No hay header → limpiar buffer
-        this.buffer = Buffer.alloc(0);
-        return;
-````
-Si no encuentra el header (AA), limpia.
-
-````
-if (this.buffer.length < startIndex + 8) {
-        return;
-````
-Espera más datos.
-
-````
- let packet = this.buffer.slice(startIndex, startIndex + 8);
-````
-Toma los 8 bytes como un paquete completo.
-
-````
- this.buffer = this.buffer.slice(startIndex + 8);
-````
-Elimina el paquete que ya se "extrajo".
-
-````
- this.processPacket(packet);
-````
-Manda ese paquete a otra función
-
-````
- if (packet[0] !== 0xAA) return;
-````
-Verifica el header.
-
-````
-let x = packet.readInt16BE(1);
-let y = packet.readInt16BE(3);
-````
-Lee números desde los bytes.
-
-````
-let btnA = packet[5] === 1;
-let btnB = packet[6] === 1;
-````
-Convierte 1 en true y 0 en false
-
-````
-let receivedChk = packet[7];
-````
-Ultimo byte
-
-````
-      let calcChk = (
-        packet[1] +
-        packet[2] +
-        packet[3] +
-        packet[4] +
-        packet[5] +
-        packet[6]
-      ) % 256;
-````
-Hace el checksum
-
-````
-      if (calcChk !== receivedChk) {
-        console.warn('Trama binaria corrupta');
-        return;
-````
-Valida los datos
-
-````
-      this.onData?.({
-        x: x,
-        y: y,
-        btnA: btnA,
-        btnB: btnB
-      });
-````
-Envía los datos al sistema.
 
 
 ## Bitácora de reflexión
