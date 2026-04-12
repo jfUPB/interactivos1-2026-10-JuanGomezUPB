@@ -365,6 +365,7 @@ class ParseError extends Error { }
 ````
 Define un error propio para distinguir errores de datos mal formados.
 
+*parseCsvLine*
 ````.js
 function parseCsvLine(line) {
   const values = line.trim().split("|");
@@ -432,6 +433,232 @@ Se verifica que sean números válidos. que estén en rango esperado y que los b
 return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
 ````
 Convierte: x, y en enteros y los botones en booleanos.
+
+*MicrobitASCII2Adapter*
+````.js
+class MicrobitAscii2Adapter extends BaseAdapter {
+  constructor({ path, baud = 115200, verbose = false } = {}) {
+    super();
+    this.path = path;
+    this.baud = baud;
+    this.port = null;
+    this.buf = "";
+    this.verbose = verbose;
+  }
+
+  async connect() {
+    if (this.connected) return;
+    if (!this.path) throw new Error("serialPort is required for microbit device mode");
+
+    this.port = new SerialPort({
+      path: this.path,
+      baudRate: this.baud,
+      autoOpen: false,
+    });
+
+    await new Promise((resolve, reject) => {
+      this.port.open((err) => (err ? reject(err) : resolve()));
+    });
+
+    this.connected = true;
+    this.onConnected?.(`serial open ${this.path} @${this.baud}`);
+
+    this.port.on("data", (chunk) => this._onChunk(chunk));
+    this.port.on("error", (err) => this._fail(err));
+    this.port.on("close", () => this._closed());
+  }
+
+  async disconnect() {
+    if (!this.connected) return;
+    this.connected = false;
+
+    if (this.port && this.port.isOpen) {
+      await new Promise((resolve, reject) => {
+        this.port.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+    this.port = null;
+    this.buf = "";
+    this.onDisconnected?.("serial closed");
+  }
+
+````
+- Constructor:
+````.js
+{
+  constructor({ path, baud = 115200, verbose = false } = {}) {
+    super();
+    this.path = path;
+    this.baud = baud;
+    this.port = null;
+    this.buf = "";
+    this.verbose = verbose;
+  }
+````
+**a)** path: puerto (ej: COM3 o /dev/ttyUSB0)
+
+**b)** baud: velocidad
+
+**c)** buf: buffer donde se acumulan datos
+
+**d)** verbose: modo debug
+
+- Connect:
+````.js
+  async connect() {
+    if (this.connected) return;
+    if (!this.path) throw new Error("serialPort is required for microbit device mode");
+
+    this.port = new SerialPort({
+      path: this.path,
+      baudRate: this.baud,
+      autoOpen: false,
+    });
+
+    await new Promise((resolve, reject) => {
+      this.port.open((err) => (err ? reject(err) : resolve()));
+    });
+
+    this.connected = true;
+    this.onConnected?.(`serial open ${this.path} @${this.baud}`);
+  }
+````
+Crea el puerto serial, lo abre y activa los siguientes eventos:
+````.js
+    this.port.on("data", (chunk) => this._onChunk(chunk));
+    this.port.on("error", (err) => this._fail(err));
+    this.port.on("close", () => this._closed());
+````
+
+- Disconnect:
+````.js
+  async disconnect() {
+    if (!this.connected) return;
+    this.connected = false;
+
+    if (this.port && this.port.isOpen) {
+      await new Promise((resolve, reject) => {
+        this.port.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+    this.port = null;
+    this.buf = "";
+    this.onDisconnected?.("serial closed");
+  }
+````
+Cierra el puerto, limpia buffer y notifica desconexión.
+
+- onChunk
+````.js
+  _onChunk(chunk) {
+    this.buf += chunk.toString("utf8");
+
+    let idx;
+    while ((idx = this.buf.indexOf("\n")) >= 0) {
+      const line = this.buf.slice(0, idx).trim();
+      this.buf = this.buf.slice(idx + 1);
+
+      if (!line) continue;
+
+      try {
+        const parsed = parseCsvLine(line);
+        this.onData?.(parsed);
+      } catch (e) {
+        if (e instanceof ParseError) {
+          if (this.verbose) console.log("Bad data:", e.message, "raw:", line);
+        } else {
+          this._fail(e);
+        }
+      }
+    }
+
+    if (this.buf.length > 4096) this.buf = "";
+  }
+````
+**a)** Acumula datos
+````.js
+this.buf += chunk.toString("utf8");
+````
+
+**b)** Busca líneas completas
+````.js
+while ((idx = this.buf.indexOf("\n")) >= 0)
+````
+Procesa cada línea completa
+
+**c)** Parsea la línea
+````.js
+const parsed = parseCsvLine(line);
+this.onData?.(parsed);
+````
+
+**d)** Manejo de errores
+````.js
+if (e instanceof ParseError)
+````
+Ignora errores de formato (opcionalmente los muestra). Si el  es error grave se desconecta.
+
+**e)** Protección del buffer
+````.js
+if (this.buf.length > 4096) this.buf = "";
+````
+Evita que crezca sin límite
+
+*fail*
+````.js
+ _fail(err) {
+    this.onError?.(String(err?.message || err));
+    this.disconnect();
+  }
+````
+Notifica de errores y desconecta.
+
+*async*
+````.js
+  async writeLine(line) {
+    if (!this.port || !this.port.isOpen) return;
+    await new Promise((resolve, reject) => {
+      this.port.write(line, (err) => (err ? reject(err) : resolve()));
+    });
+  }
+````
+La función **writeLine(line)** toma un texto y lo envía por el puerto serial al micro:bit para que ejecute una acción. Lo hace de forma asíncrona, asegurándose de que el envío se complete correctamente o lance un error si falla.
+
+*handleCommand*
+````.js
+  async handleCommand(cmd) {
+    if (cmd?.cmd === "setLed") {
+      const x = Math.max(0, Math.min(4, Math.trunc(cmd.x)));
+      const y = Math.max(0, Math.min(4, Math.trunc(cmd.y)));
+      const v = Math.max(0, Math.min(9, Math.trunc(cmd.value)));
+      await this.writeLine(`LED,${x},${y},${v}\n`);
+    }
+  }
+}
+````
+
+**a)**
+````.js
+if (cmd?.cmd === "setLed")
+````
+Permite controlar LEDs de la micro:bit
+
+**b)**
+````.js
+Math.max(0, Math.min(4, ...))
+````
+Limita coordenadas (0–4) y limita brillo (0–9)
+
+*Exportación:*
+````.js
+module.exports = MicrobitAscii2Adapter;
+````
 
 **Código del microbit**
 ```` .py
