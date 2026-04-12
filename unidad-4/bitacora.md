@@ -386,7 +386,8 @@ function parseCsvLine(line) {
 
   return { x: x | 0, y: y | 0, btnA: btnA === 1, btnB: btnB === 1 };
 ````
-- Esta función es importante porque se encarga de leer las líneas que llegan de la siguiente forma:
+Esta función es importante porque se encarga de leer las líneas que llegan de la siguiente forma:
+
 **a)** Separa los datos
 ````.js
  const values = line.trim().split("|");
