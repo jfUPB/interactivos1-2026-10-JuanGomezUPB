@@ -215,8 +215,8 @@ pop();
 - **line(0, 0, painter.lineSize, painter.lineSize)**: Dibuja una línea desde (0,0) hasta (lineSize, lineSize). Como el sistema está trasladado y rotado, la línea: aparece en (x, y) y gira con el ángulo.
 - **painter.angle += 1**: Incrementa el ángulo en cada frame. Produce animación (la línea gira continuamente).
 
-**-------------------------------------------------------------------------------------------------------**
-
+## Bitácora de aplicación 
+### Actividad 02
 **Parte 2**
 ***Código del MicrobitASCII2Adapter*** *(El código nuevo)*
 ````.js
