@@ -18,7 +18,7 @@
 **n**
 node bridgeServer.js --device microbit = Abrir él que funciona con los comandos del microbit
 
-### Actividad 02
+### Actividad 02 *de la bitácora de aplicación*
 **Parte 1**
 *En esta primera parte voy a explicar el código que aparece en la página de la unidad 4 con el fin de entender bien que hace cada parte*
 
