@@ -359,7 +359,7 @@ class MicrobitAscii2Adapter extends BaseAdapter {
 
 module.exports = MicrobitAscii2Adapter;
 ````
-Explicación del código:
+**Explicación del código nuevo:**
 ````.js
 class ParseError extends Error { }
 ````
@@ -392,12 +392,14 @@ Esta función es importante porque se encarga de leer las líneas que llegan de 
 ````.js
  const values = line.trim().split("|");
 ````
-Divide los datos que llegan por **|**
+Divide los datos que llegan por "|"
+
 **b)** Validar cantidad
 ````.js
 if (values.length !== 6) throw new ParseError(`Expected 6 values, got ${values.length}`);
 ````
 Los datos deben llegar en seis partes, de lo contrario se muestra en pantalla el siguiente error: "Expected 6 values, got ${values.length}"
+
 **c)** Extraer valores
 ````.js
   const t = Number(values[0].split(":")[1]);
@@ -408,13 +410,15 @@ Los datos deben llegar en seis partes, de lo contrario se muestra en pantalla el
   const CHK = Number(values[5].split(":")[1]) % 1000;
 ````
 Divide los valores que llegan por ":" y toma el valor numérico.
+
 **d)** Verificar checksum
 ````.js
 const calcCHK = Math.abs(x) + Math.abs(y) + btnA + btnB;
 if (calcCHK !== CHK)
 throw new ParseError("Checksum mismatch");
 ````
-Hace una suma entre todos los valores a la que se le llama Checksum, si es igual al Check original entonces está bien, de lo contrario es un error y se muestra en pantalla como: "Checksum mismatch"
+Hace una suma entre todos los valores a la que se le llama Checksum, si es igual al Check original entonces está bien, de lo contrario es un error y se muestra en pantalla como: "Checksum mismatch".
+
 **e)** Validaciones extra
 ````.js
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new ParseError("Invalid numeric data");
