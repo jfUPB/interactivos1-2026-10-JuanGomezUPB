@@ -2,7 +2,7 @@
 
 ## Bitácora de proceso de aprendizaje
 
-## Bitácora de reflexión
+## Bitácora de aplicación
 
 **Cambios al código original**
 
@@ -65,6 +65,6 @@ const colors = {
 ````
 Se le va a asignar un color a cada sonido. 
 
-## Bitácora de aplicación 
+## Bitácora de reflexión 
 
 
