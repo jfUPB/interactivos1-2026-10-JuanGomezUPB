@@ -7,7 +7,7 @@
 **Cambios al código original**
 
 **1.** ***bridgeServer.js***
-.js
+````.js
 const WebSocket = require('ws');
 const osc = require('node-osc');
 const StrudelAdapter = require('./StrudelAdapter'); // Importar el StrudelAdapter
@@ -64,7 +64,8 @@ adapter.onData = (data) => {
 wssP5.on('connection', (ws) => {
     console.log('p5.js se ha conectado al Bridge');
 });
-
+````
+**a)**
 ````.js
 adapter.handleMessage(message);
 
@@ -177,6 +178,7 @@ this.onData?.(parsed);
 El Adapter toma el formato original que envía Strudel (como los args) y convertirlo en un objeto más claro y fácil de usar. Esto se hace para que el resto del sistema no tenga que entender ese formato más complejo y pueda trabajar con datos simples y consistentes.
 
 **3.** ***sketch (frontend)***
+````.js
   let eventQueue = [];
   let activeAnimations = []; // Animaciones que se están dibujando ahora
   const LATENCY_CORRECTION = 0; // Ajuste fino en ms (ej. 50 si el audio va lento)
@@ -217,6 +219,7 @@ El Adapter toma el formato original que envía Strudel (como los args) y convert
       }
     };
   }
+
 
   function draw() {
     background(0, 30); 
@@ -342,7 +345,7 @@ El Adapter toma el formato original que envía Strudel (como los args) y convert
   }  
 
   function windowResized() { resizeCanvas(windowWidth, windowHeight); }
-  
+````  
 **a)**
 ````.js
 if (msg.type === "strudel") {
