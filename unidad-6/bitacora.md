@@ -76,6 +76,7 @@ adapter.onData = (data) => {
 Antes el bridge parseaba el mensaje y lo reenviaba directamente, es decir no solo enviaba el mensaje sino que además pensaba. Ahora delega el procesamiento al Adapter y se limita a reenviar datos, eso sí ya normalizados, manteniendo que no debe "pensar".
 
 **2.** ***StrudelAdapter.js***
+````.js
 const BaseAdapter = require('./BaseAdapter');
 
 class StrudelParseError extends Error {}
@@ -114,12 +115,12 @@ class StrudelAdapter extends BaseAdapter {
   }
 
   parseStrudelMessage(msg) {
-    // 🔹 Validaciones (igual que en U5)
+    // Validaciones (igual que en U5)
     if (!msg.args || !msg.timestamp) {
       throw new StrudelParseError("Invalid message structure");
     }
 
-    // 🔹 Convertir args → objeto
+    // Convertir args → objeto
     const argsObj = {};
     for (let i = 0; i < msg.args.length; i += 2) {
       const key = msg.args[i];
@@ -127,12 +128,12 @@ class StrudelAdapter extends BaseAdapter {
       argsObj[key] = value;
     }
 
-    // 🔹 Validar datos importantes
+    // Validar datos importantes
     if (!argsObj.s) {
       throw new StrudelParseError("Missing sound (s)");
     }
 
-    // 🔹 Normalización (CLAVE)
+    // Normalización (CLAVE)
     return {
       type: "strudel",
       timestamp: Math.floor(msg.timestamp),
@@ -160,7 +161,8 @@ class StrudelAdapter extends BaseAdapter {
 }
 
 module.exports = StrudelAdapter;
-
+````
+**a)**
 ````.js
 const msg = JSON.parse(rawMsg);
 
