@@ -35,7 +35,7 @@ El Adapter toma el formato original que envía Strudel (como los args) y convert
 
 **3.** ***sketch (frontend)***
 
-    **a)**
+**a)**
 ````.js
 if (msg.type === "strudel") {
     eventQueue.push({
@@ -47,7 +47,7 @@ if (msg.type === "strudel") {
 ````
 El frontend deja de interpretar el mensaje crudo (msg.args). En su lugar va a recibir e interpretar el mensaje que le llegue desde el Adapter. Esto simplifica la lógica en la capa visual.
 
-    **b)** 
+**b)** 
 ````.js
 case 'bd':
 case 'sd':
@@ -55,7 +55,7 @@ case 'hh':
 ````
 Los identificadores de sonido se simplifican porque el Adapter ya realizó la normalización. Los nombres como tr909bd ahora son reemplzados por bd, sd o hh. De necesitarse más sonidos solo se añadirían a estos casos. dado que ahora la aplicación funciona para canciones que reproduzcan estos sonidos ("bd","sd","hh") porque de lo contrario no los va a reconocer.
 
-    **c)**
+**c)**
 ````.js
 const colors = {
   'bd': [255, 0, 80],
