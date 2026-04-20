@@ -15,8 +15,8 @@
 **Frontend**
 - Visuales --> p5.js *en este caso*
 
-### Actividiad 1
-https://github.com/juanferfranco/openStageControl-sfi1-2026-10
+### Actividad 1
+- https://github.com/juanferfranco/openStageControl-sfi1-2026-10
 - 
 ## Bitácora de aplicación 
 
