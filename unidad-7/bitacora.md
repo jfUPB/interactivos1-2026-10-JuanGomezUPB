@@ -17,8 +17,17 @@
 
 ### Actividad 1
 - https://github.com/juanferfranco/openStageControl-sfi1-2026-10
-- 
+- Protocolo udp: comúnica dos aplicaciones
+- No se pueden utilizar los mismos puertos incluso si son protocolos distintos (8080, 8081, 8081, 9000)
+- Node birdge.js y node bridgeOSC.js respectivamente
+  *OpenStageController*
+- Se abre opennstagecontrol (launcher) --> lanza automaticamente un servidor y un cliente (aplicaciones locales corriendo en el computador)
+- send: dirección local (en este caso debe terminart en 9000) --> el puerto donde el bridge esta escuchando.
+- port: 8086 en este caso
+- Se lanza una configuración..> en este caso launcher.config
+
 ## Bitácora de aplicación 
+
 
 
 ## Bitácora de reflexión
